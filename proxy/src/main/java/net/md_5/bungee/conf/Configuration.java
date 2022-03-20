@@ -64,6 +64,11 @@ public class Configuration implements ProxyConfig
     private int compressionThreshold = 256;
     private boolean preventProxyConnections;
     private boolean forgeSupport;
+    // 新增以下2行代码以适配中国版
+    // 审核服: http://x19authexpr.nie.netease.com/check
+    // 正式服: http://x19authserver.nie.netease.com/check
+    private String gameId;
+    private String url = "http://x19authexpr.nie.netease.com/check";
 
     public void load()
     {
@@ -98,6 +103,9 @@ public class Configuration implements ProxyConfig
         compressionThreshold = adapter.getInt( "network_compression_threshold", compressionThreshold );
         preventProxyConnections = adapter.getBoolean( "prevent_proxy_connections", preventProxyConnections );
         forgeSupport = adapter.getBoolean( "forge_support", forgeSupport );
+        // 新增以下2行代码以适配中国版
+        gameId = adapter.getString("game_id", ""); // 默认为""
+        url = adapter.getString("auth_url", url);
 
         disabledCommands = new CaseInsensitiveSet( (Collection<String>) adapter.getList( "disabled_commands", Arrays.asList( "disabledcommandhere" ) ) );
 

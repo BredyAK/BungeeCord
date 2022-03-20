@@ -109,6 +109,11 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     private boolean legacy;
     @Getter
     private String extraDataInHandshake = "";
+    // 新增以下4行代码以适配中国版
+    @Getter
+    private String gameId = BungeeCord.getInstance().config.getGameId();
+    @Getter
+    private String url = BungeeCord.getInstance().config.getUrl();
 
     @Override
     public boolean shouldHandle(PacketWrapper packet) throws Exception
@@ -353,11 +358,12 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     {
         Preconditions.checkState( thisState == State.USERNAME, "Not expecting USERNAME" );
 
-        if ( !AllowedCharacters.isValidName( loginRequest.getData(), onlineMode ) )
-        {
-            disconnect( bungee.getTranslation( "name_invalid" ) );
-            return;
-        }
+        // 删除(注释掉)以下1-5行以适配中国版
+        // if ( !AllowedCharacters.isValidName( loginRequest.getData(), onlineMode ) )
+        // {
+        //     disconnect( bungee.getTranslation( "name_invalid" ) );
+        //     return;
+        // }
         this.loginRequest = loginRequest;
 
         int limit = BungeeCord.getInstance().config.getPlayerLimit();
@@ -417,7 +423,9 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         BungeeCipher encrypt = EncryptionUtil.getCipher( true, sharedKey );
         ch.addBefore( PipelineUtils.FRAME_PREPENDER, PipelineUtils.ENCRYPT_HANDLER, new CipherEncoder( encrypt ) );
 
-        String encName = URLEncoder.encode( InitialHandler.this.getName(), "UTF-8" );
+        // 删除(注释掉)以下1行, 并新增第2行代码以适配中国版
+        // String encName = URLEncoder.encode( InitialHandler.this.getName(), "UTF-8" );
+        String username = getName();
 
         MessageDigest sha = MessageDigest.getInstance( "SHA-1" );
         for ( byte[] bit : new byte[][]
@@ -427,10 +435,13 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         {
             sha.update( bit );
         }
-        String encodedHash = URLEncoder.encode( new BigInteger( sha.digest() ).toString( 16 ), "UTF-8" );
+        // 删除(注释掉)以下1,3,4行, 并新增第5,6行代码以适配中国版
+        // String encodedHash = URLEncoder.encode( new BigInteger( sha.digest() ).toString( 16 ), "UTF-8" );
 
-        String preventProxy = ( BungeeCord.getInstance().config.isPreventProxyConnections() && getSocketAddress() instanceof InetSocketAddress ) ? "&ip=" + URLEncoder.encode( getAddress().getAddress().getHostAddress(), "UTF-8" ) : "";
-        String authURL = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + encName + "&serverId=" + encodedHash + preventProxy;
+        // String preventProxy = ( BungeeCord.getInstance().config.isPreventProxyConnections() && getSocketAddress() instanceof InetSocketAddress ) ? "&ip=" + URLEncoder.encode( getAddress().getAddress().getHostAddress(), "UTF-8" ) : "";
+        // String authURL = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + encName + "&serverId=" + encodedHash + preventProxy;
+        String serverID = new BigInteger( sha.digest() ).toString( 16 );
+        final HasJoinedRequest data = new HasJoinedRequest( username, serverID, this.getGameId() );
 
         Callback<String> handler = new Callback<String>()
         {
@@ -457,7 +468,9 @@ public class InitialHandler extends PacketHandler implements PendingConnection
             }
         };
         thisState = State.FINISHING;
-        HttpClient.get( authURL, ch.getHandle().eventLoop(), handler );
+        // 删除(注释掉)以下1行, 并新增第2行代码以适配中国版
+        // HttpClient.get( authURL, ch.getHandle().eventLoop(), handler );
+        HttpClient.post( this.getUrl(), data, ch.getHandle().eventLoop(), handler );
     }
 
     private void finish()
