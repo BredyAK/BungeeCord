@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HashSet;
@@ -403,10 +404,13 @@ public class InitialHandler extends PacketHandler implements PendingConnection
                 return;
             }
 
-            if ( !EncryptionUtil.check( publicKey ) )
+            if ( getVersion() < ProtocolConstants.MINECRAFT_1_19_1 )
             {
-                disconnect( bungee.getTranslation( "secure_profile_invalid" ) );
-                return;
+                if ( !EncryptionUtil.check( publicKey, null ) )
+                {
+                    disconnect( bungee.getTranslation( "secure_profile_invalid" ) );
+                    return;
+                }
             }
         }
 
@@ -435,7 +439,8 @@ public class InitialHandler extends PacketHandler implements PendingConnection
             {
                 if ( result.isCancelled() )
                 {
-                    disconnect( result.getCancelReasonComponents() );
+                    BaseComponent[] reason = result.getCancelReasonComponents();
+                    disconnect( ( reason != null ) ? reason : TextComponent.fromLegacyText( bungee.getTranslation( "kick_message" ) ) );
                     return;
                 }
                 if ( ch.isClosed() )
@@ -522,6 +527,32 @@ public class InitialHandler extends PacketHandler implements PendingConnection
 
     private void finish()
     {
+        offlineId = UUID.nameUUIDFromBytes( ( "OfflinePlayer:" + getName() ).getBytes( Charsets.UTF_8 ) );
+        if ( uniqueId == null )
+        {
+            uniqueId = offlineId;
+        }
+
+        if ( BungeeCord.getInstance().config.isEnforceSecureProfile() )
+        {
+            if ( getVersion() >= ProtocolConstants.MINECRAFT_1_19_1 )
+            {
+                boolean secure = false;
+                try
+                {
+                    secure = EncryptionUtil.check( loginRequest.getPublicKey(), uniqueId );
+                } catch ( GeneralSecurityException ex )
+                {
+                }
+
+                if ( !secure )
+                {
+                    disconnect( bungee.getTranslation( "secure_profile_invalid" ) );
+                    return;
+                }
+            }
+        }
+
         if ( isOnlineMode() )
         {
             // Check for multiple connections
@@ -552,12 +583,6 @@ public class InitialHandler extends PacketHandler implements PendingConnection
 
         }
 
-        offlineId = UUID.nameUUIDFromBytes( ( "OfflinePlayer:" + getName() ).getBytes( Charsets.UTF_8 ) );
-        if ( uniqueId == null )
-        {
-            uniqueId = offlineId;
-        }
-
         Callback<LoginEvent> complete = new Callback<LoginEvent>()
         {
             @Override
@@ -565,7 +590,8 @@ public class InitialHandler extends PacketHandler implements PendingConnection
             {
                 if ( result.isCancelled() )
                 {
-                    disconnect( result.getCancelReasonComponents() );
+                    BaseComponent[] reason = result.getCancelReasonComponents();
+                    disconnect( ( reason != null ) ? reason : TextComponent.fromLegacyText( bungee.getTranslation( "kick_message" ) ) );
                     return;
                 }
                 if ( ch.isClosed() )
