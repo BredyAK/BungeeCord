@@ -36,8 +36,7 @@ import net.md_5.bungee.protocol.packet.PlayerListItemRemove;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 import net.md_5.bungee.protocol.packet.TabCompleteRequest;
 import net.md_5.bungee.protocol.packet.TabCompleteResponse;
-// 删除(注释掉)以下1行以适配中国版
-// import net.md_5.bungee.util.AllowedCharacters;
+import net.md_5.bungee.util.AllowedCharacters;
 
 public class UpstreamBridge extends PacketHandler
 {
@@ -190,12 +189,11 @@ public class UpstreamBridge extends PacketHandler
         for ( int index = 0, length = message.length(); index < length; index++ )
         {
             char c = message.charAt( index );
-            // 删除(注释掉)以下1-5行以适配中国版
-            // if ( !AllowedCharacters.isChatAllowedCharacter( c ) )
-            // {
-            //     con.disconnect( bungee.getTranslation( "illegal_chat_characters", Util.unicode( c ) ) );
-            //     throw CancelSendSignal.INSTANCE;
-            // }
+            if ( !AllowedCharacters.isChatAllowedCharacter( c ) )
+            {
+                con.disconnect( bungee.getTranslation( "illegal_chat_characters", Util.unicode( c ) ) );
+                throw CancelSendSignal.INSTANCE;
+            }
         }
 
         ChatEvent chatEvent = new ChatEvent( con, con.getServer(), message );

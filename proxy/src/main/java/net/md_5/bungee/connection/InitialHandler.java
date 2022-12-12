@@ -66,8 +66,7 @@ import net.md_5.bungee.protocol.packet.PingPacket;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 import net.md_5.bungee.protocol.packet.StatusRequest;
 import net.md_5.bungee.protocol.packet.StatusResponse;
-// 删除(注释掉)以下1行以适配中国版
-// import net.md_5.bungee.util.AllowedCharacters;
+import net.md_5.bungee.util.AllowedCharacters;
 import net.md_5.bungee.util.BufUtil;
 import net.md_5.bungee.util.QuietException;
 
@@ -383,12 +382,11 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     {
         Preconditions.checkState( thisState == State.USERNAME, "Not expecting USERNAME" );
 
-        // 删除(注释掉)以下1-5行以适配中国版
-        // if ( !AllowedCharacters.isValidName( loginRequest.getData(), onlineMode ) )
-        // {
-        //     disconnect( bungee.getTranslation( "name_invalid" ) );
-        //     return;
-        // }
+        if ( !AllowedCharacters.isValidName( loginRequest.getData(), onlineMode ) )
+        {
+            disconnect( bungee.getTranslation( "name_invalid" ) );
+            return;
+        }
 
         if ( BungeeCord.getInstance().config.isEnforceSecureProfile() && getVersion() < ProtocolConstants.MINECRAFT_1_19_3 )
         {
