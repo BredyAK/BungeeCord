@@ -15,7 +15,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import se.llbit.nbt.ErrorTag;
 import se.llbit.nbt.NamedTag;
+import se.llbit.nbt.SpecificTag;
 import se.llbit.nbt.Tag;
 
 @RequiredArgsConstructor
@@ -293,18 +295,48 @@ public abstract class DefinedPacket
         return null;
     }
 
-    public static Tag readTag(ByteBuf input)
+    public static Tag readTag(ByteBuf input, int protocolVersion)
     {
-        Tag tag = NamedTag.read( new DataInputStream( new ByteBufInputStream( input ) ) );
+        DataInputStream in = new DataInputStream( new ByteBufInputStream( input ) );
+        Tag tag;
+        if ( protocolVersion >= ProtocolConstants.MINECRAFT_1_20_2 )
+        {
+            try
+            {
+                byte type = in.readByte();
+                if ( type == 0 )
+                {
+                    return Tag.END;
+                } else
+                {
+                    tag = SpecificTag.read( type, in );
+                }
+            } catch ( IOException ex )
+            {
+                tag = new ErrorTag( "IOException while reading tag type:\n" + ex.getMessage() );
+            }
+        } else
+        {
+            tag = NamedTag.read( in );
+        }
         Preconditions.checkArgument( !tag.isError(), "Error reading tag: %s", tag.error() );
         return tag;
     }
 
-    public static void writeTag(Tag tag, ByteBuf output)
+    public static void writeTag(Tag tag, ByteBuf output, int protocolVersion)
     {
+        DataOutputStream out = new DataOutputStream( new ByteBufOutputStream( output ) );
         try
         {
-            tag.write( new DataOutputStream( new ByteBufOutputStream( output ) ) );
+            if ( tag instanceof SpecificTag )
+            {
+                SpecificTag specificTag = (SpecificTag) tag;
+                specificTag.writeType( out );
+                specificTag.write( out );
+            } else
+            {
+                tag.write( out );
+            }
         } catch ( IOException ex )
         {
             throw new RuntimeException( "Exception writing tag", ex );
@@ -376,6 +408,11 @@ public abstract class DefinedPacket
     public void write(ByteBuf buf, ProtocolConstants.Direction direction, int protocolVersion)
     {
         write( buf );
+    }
+
+    public Protocol nextProtocol()
+    {
+        return null;
     }
 
     public abstract void handle(AbstractPacketHandler handler) throws Exception;
