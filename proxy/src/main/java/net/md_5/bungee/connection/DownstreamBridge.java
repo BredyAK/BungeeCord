@@ -67,6 +67,7 @@ import net.md_5.bungee.protocol.packet.Respawn;
 import net.md_5.bungee.protocol.packet.ScoreboardDisplay;
 import net.md_5.bungee.protocol.packet.ScoreboardObjective;
 import net.md_5.bungee.protocol.packet.ScoreboardScore;
+import net.md_5.bungee.protocol.packet.ScoreboardScoreReset;
 import net.md_5.bungee.protocol.packet.ServerData;
 import net.md_5.bungee.protocol.packet.SetCompression;
 import net.md_5.bungee.protocol.packet.TabCompleteResponse;
@@ -183,7 +184,7 @@ public class DownstreamBridge extends PacketHandler
         switch ( objective.getAction() )
         {
             case 0:
-                serverScoreboard.addObjective( new Objective( objective.getName(), objective.getValue(), objective.getType().toString() ) );
+                serverScoreboard.addObjective( new Objective( objective.getName(), ( objective.getValue().isLeft() ) ? objective.getValue().getLeft() : ComponentSerializer.toString( objective.getValue().getRight() ), objective.getType().toString() ) );
                 break;
             case 1:
                 serverScoreboard.removeObjective( objective.getName() );
@@ -192,7 +193,7 @@ public class DownstreamBridge extends PacketHandler
                 Objective oldObjective = serverScoreboard.getObjective( objective.getName() );
                 if ( oldObjective != null )
                 {
-                    oldObjective.setValue( objective.getValue() );
+                    oldObjective.setValue( ( objective.getValue().isLeft() ) ? objective.getValue().getLeft() : ComponentSerializer.toString( objective.getValue().getRight() ) );
                     oldObjective.setType( objective.getType().toString() );
                 }
                 break;
@@ -217,6 +218,18 @@ public class DownstreamBridge extends PacketHandler
                 break;
             default:
                 throw new IllegalArgumentException( "Unknown scoreboard action: " + score.getAction() );
+        }
+    }
+
+    @Override
+    public void handle(ScoreboardScoreReset scoreboardScoreReset) throws Exception
+    {
+        Scoreboard serverScoreboard = con.getServerSentScoreboard();
+
+        // TODO: Expand score API to handle objective values. Shouldn't matter currently as only used for removing score entries.
+        if ( scoreboardScoreReset.getScoreName() == null )
+        {
+            serverScoreboard.removeScore( scoreboardScoreReset.getItemName() );
         }
     }
 
@@ -254,9 +267,9 @@ public class DownstreamBridge extends PacketHandler
         {
             if ( team.getMode() == 0 || team.getMode() == 2 )
             {
-                t.setDisplayName( team.getDisplayName() );
-                t.setPrefix( team.getPrefix() );
-                t.setSuffix( team.getSuffix() );
+                t.setDisplayName( ComponentSerializer.toString( team.getDisplayName() ) );
+                t.setPrefix( ComponentSerializer.toString( team.getPrefix() ) );
+                t.setSuffix( ComponentSerializer.toString( team.getSuffix() ) );
                 t.setFriendlyFire( team.getFriendlyFire() );
                 t.setNameTagVisibility( team.getNameTagVisibility() );
                 t.setCollisionRule( team.getCollisionRule() );
@@ -620,13 +633,16 @@ public class DownstreamBridge extends PacketHandler
     public void handle(Kick kick) throws Exception
     {
         ServerInfo def = con.updateAndGetNextServer( server.getInfo() );
-        ServerKickEvent event = bungee.getPluginManager().callEvent( new ServerKickEvent( con, server.getInfo(), ComponentSerializer.parse( kick.getMessage() ), def, ServerKickEvent.State.CONNECTED ) );
+        ServerKickEvent event = bungee.getPluginManager().callEvent( new ServerKickEvent( con, server.getInfo(), new BaseComponent[]
+        {
+            kick.getMessage()
+        }, def, ServerKickEvent.State.CONNECTED ) );
         if ( event.isCancelled() && event.getCancelServer() != null )
         {
             con.connectNow( event.getCancelServer(), ServerConnectEvent.Reason.KICK_REDIRECT );
         } else
         {
-            con.disconnect0( event.getKickReasonComponent() ); // TODO: Prefix our own stuff.
+            con.disconnect( event.getKickReasonComponent() ); // TODO: Prefix our own stuff.
         }
         server.setObsolete( true );
         throw CancelSendSignal.INSTANCE;
