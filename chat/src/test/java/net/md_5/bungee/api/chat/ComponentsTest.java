@@ -431,6 +431,16 @@ public class ComponentsTest
     }
 
     @Test
+    public void testStyle()
+    {
+        ComponentStyle style = ComponentSerializer.deserializeStyle( "{\"color\":\"red\",\"font\":\"minecraft:example\",\"bold\":true,\"italic\":false,\"obfuscated\":true}" );
+        String text = ComponentSerializer.toString( style );
+        ComponentStyle reparsed = ComponentSerializer.deserializeStyle( text );
+
+        assertEquals( style, reparsed );
+    }
+
+    @Test
     public void testBuilderAppendCreate()
     {
         this.testBuilderAppend(
@@ -813,6 +823,28 @@ public class ComponentsTest
                 ComponentBuilder::build,
                 ComponentSerializer::toString
         );
+    }
+
+    @Test
+    public void testHasFormatting()
+    {
+        BaseComponent component = new TextComponent();
+        assertFalse( component.hasFormatting() );
+
+        component.setBold( true );
+        assertTrue( component.hasFormatting() );
+    }
+
+    @Test
+    public void testStyleIsEmpty()
+    {
+        ComponentStyle style = ComponentStyle.builder().build();
+        assertTrue( style.isEmpty() );
+
+        style = ComponentStyle.builder()
+            .bold( true )
+            .build();
+        assertFalse( style.isEmpty() );
     }
 
     /*

@@ -5,7 +5,7 @@
 
     <groupId>net.md-5</groupId>
     <artifactId>bungeecord-parent</artifactId>
-    <version>1.20-R0.2-SNAPSHOT</version>
+    <version>1.20-R0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BungeeCord-Parent</name>
@@ -83,7 +83,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.104.Final</version>
+                <version>4.1.107.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -93,7 +93,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.10.1</version>
+            <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -106,6 +106,12 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>findbugs-annotations</artifactId>
             <version>3.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations-java5</artifactId>
+            <version>24.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

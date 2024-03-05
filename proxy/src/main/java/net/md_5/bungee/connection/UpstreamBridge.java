@@ -32,6 +32,7 @@ import net.md_5.bungee.protocol.packet.Chat;
 import net.md_5.bungee.protocol.packet.ClientChat;
 import net.md_5.bungee.protocol.packet.ClientCommand;
 import net.md_5.bungee.protocol.packet.ClientSettings;
+import net.md_5.bungee.protocol.packet.CookieResponse;
 import net.md_5.bungee.protocol.packet.FinishConfiguration;
 import net.md_5.bungee.protocol.packet.KeepAlive;
 import net.md_5.bungee.protocol.packet.LoginAcknowledged;
@@ -128,7 +129,7 @@ public class UpstreamBridge extends PacketHandler
     @Override
     public boolean shouldHandle(PacketWrapper packet) throws Exception
     {
-        return con.getServer() != null || packet.packet instanceof PluginMessage;
+        return con.getServer() != null || packet.packet instanceof PluginMessage || packet.packet instanceof CookieResponse;
     }
 
     @Override
@@ -361,6 +362,12 @@ public class UpstreamBridge extends PacketHandler
     public void handle(FinishConfiguration finishConfiguration) throws Exception
     {
         con.sendQueuedPackets();
+    }
+
+    @Override
+    public void handle(CookieResponse cookieResponse) throws Exception
+    {
+        con.getPendingConnection().handle( cookieResponse );
     }
 
     @Override
